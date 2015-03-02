@@ -1,0 +1,9 @@
+{
+  "name": "Landfill",
+  "version": "2.1.2",
+  "title": "Landfill",
+  "author": "GotLag (modified by Rseding91)",
+  "homepage": "http://www.factorioforums.com/forum/viewtopic.php?f=14&t=4973",
+  "dependencies": ["base"],
+  "description": "Use stone to reclaim land and explosions to remove it."
+}
