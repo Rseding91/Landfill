@@ -26,7 +26,7 @@ data:extend(
 			enabled = "true",
 			ingredients =
 			{
-				{"iron-plate", 1}
+				{"electronic-circuit", 1}
 			},
 			result = "water-be-gone"
 		},
