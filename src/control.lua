@@ -6,7 +6,7 @@ local maximumRockThrowDistance = 10
 local loaded
 local bombs
 
-game.onload(function()
+function loaded()
 	if not loaded then
 		loaded = true
 		
@@ -18,19 +18,10 @@ game.onload(function()
 			end
 		end
 	end
-end)
+end
 
-game.oninit(function()
-	loaded = true
-	
-	if glob.bombs ~= nil then
-		bombs = glob.bombs
-		game.onevent(defines.events.ontick, tickBombs)
-		if glob.ticks == nil then
-			glob.ticks = 0
-		end
-	end
-end)
+game.onload(loaded)
+game.oninit(loaded)
 
 function tickBombs()
 	if glob.ticks > 0 then glob.ticks = glob.ticks - 1 else glob.ticks = 10, executeTicks() end
@@ -65,8 +56,8 @@ function executeTicks()
 				v[1].destroy()
 				v[2] = 1
 				v[3] = game.tick
-				createWater(x, y)
-				throwDirt(x, y)
+				createWater(x, y, 1)
+				throwDirt(x, y, 1)
 			else
 				if energy > 40000000 then
 					game.createentity({name = "smoke", position = v[1].position})
@@ -104,14 +95,19 @@ function executeTicks()
 	end
 end
 
-function createWater(x, y)
-	local waterTiles = {}
+function createWater(x, y, size)
+	local players = game.findentitiesfiltered({area = {{x - size - 1, y - size - 1}, {x + size + 1, y + size + 1}}, type="player"})
+	-- Setting tiles to water where players are standing deletes the player and sets them to god mode.
+	if #players ~= 0 then
+		return
+	end
 	
+	local waterTiles = {}
 	x = math.floor(x)
 	y = math.floor(y)
 	
-	for wx = x - 1, x + 1, 1 do
-		for wy = y - 1, y + 1, 1 do
+	for wx = x - size, x + size, 1 do
+		for wy = y - size, y + size, 1 do
 			table.insert(waterTiles, {name="water", position={wx, wy}})
 		end
 	end
@@ -119,10 +115,9 @@ function createWater(x, y)
 	game.settiles(waterTiles)
 end
 
-function throwDirt(x, y)
+function throwDirt(x, y, size)
 	local dirtTiles = {}
 	local tileName
-	local dirtDisplaced = 0
 	local floor = math.floor
 	local distX,distY
 	
@@ -130,19 +125,18 @@ function throwDirt(x, y)
 		x = floor(x)
 		y = floor(y)
 		
-		for xx = x - 3, x + 3, 1 do
-			for yy = y - 3, y + 3, 1 do
+		for xx = x - (size + 2), x + (size + 2), 1 do
+			for yy = y - (size + 2), y + (size + 2), 1 do
 				distX = math.abs(x - xx)
 				distY = math.abs(y - yy)
 				
 				if floor(math.sqrt((distX * distX) + (distY * distY))) >= 2 then
 					table.insert(dirtTiles, {name = "grass", position = {xx, yy}})
-					dirtDisplaced = dirtDisplaced + 1
 				end
 			end
 		end
 		
-		if dirtDisplaced ~= 0 then
+		if #dirtTiles ~= 0 then
 			game.settiles(dirtTiles)
 		end
 	end
@@ -151,29 +145,31 @@ end
 function createRandomStone(position)
 	local x,y
 	local tileName
+	local floor = math.floor
+	local random = math.random
 	
 	if throwRocks == true then
 		x = position.x
 		y = position.y
 		
-		if math.random() > 0.5 then
-			x = x - math.floor(math.random(2, maximumRockThrowDistance))
+		if random() > 0.5 then
+			x = x - floor(random(2, maximumRockThrowDistance))
 		else
-			x = x + math.floor(math.random(2, maximumRockThrowDistance))
+			x = x + floor(random(2, maximumRockThrowDistance))
 		end
 		
-		if math.random() < 0.5 then
-			y = y - math.floor(math.random(2, maximumRockThrowDistance))
+		if random() < 0.5 then
+			y = y - floor(random(2, maximumRockThrowDistance))
 		else
-			y = y + math.floor(math.random(2, maximumRockThrowDistance))
+			y = y + floor(random(2, maximumRockThrowDistance))
 		end
 		
-		tileName = game.gettile(math.floor(x), math.floor(y)).name
+		tileName = game.gettile(floor(x), floor(y)).name
 		
 		if tileName == "water" or tileName == "deepwater" then
-			game.settiles({{name="grass", position={math.floor(x), math.floor(y)}}})
+			game.settiles({{name="grass", position={floor(x), floor(y)}}})
 		else
-			game.createentity({name = "stone", position = {x, y}}).amount = math.floor(math.random(13, 27))
+			game.createentity({name = "stone", position = {x, y}}).amount = floor(random(13, 27))
 			game.createentity({name = "explosion", position = {x, y}})
 			game.createentity({name = "smoke", position = {x, y}})
 		end
@@ -181,7 +177,6 @@ function createRandomStone(position)
 end
 
 game.onevent(defines.events.onbuiltentity, function(event)
-	local doFade = false
 	local newBomb
 	local bombEntity
 	local player
@@ -190,22 +185,14 @@ game.onevent(defines.events.onbuiltentity, function(event)
 	end
 	
 	if event.createdentity.name == "landfill2by2"
-		or event.createdentity.name == "landfill8by8"
+		or event.createdentity.name == "landfill4by4"
 		or event.createdentity.name == "water-be-gone" then
 			if event.createdentity.name == "landfill2by2" then
-				doFade = 1
 				landfill2by2(event.createdentity.position, player)
-			elseif event.createdentity.name == "landfill8by8" then
-				doFade = 2
-				landfill8by8(event.createdentity.position, player)
+			elseif event.createdentity.name == "landfill4by4" then
+				landfill4by4(event.createdentity.position, player)
 			elseif event.createdentity.name == "water-be-gone" then
 				waterBeGone(event.createdentity.position, player)
-			end
-			
-			if doFade == 1 then
-				game.createentity({name = "landfill-fade", position = event.createdentity.position, force = game.forces.player})
-			elseif doFade == 2 then
-				game.createentity({name = "landfill-fade-2", position = event.createdentity.position, force = game.forces.player})
 			end
 			event.createdentity.destroy()
 	elseif event.createdentity.name == "water-bomb-area" then
@@ -230,115 +217,79 @@ game.onevent(defines.events.onbuiltentity, function(event)
 	end
 end)
 
+function landfill(position, size)
+	local tileName
+	local tiles = {}
+	local holes
+	local xpos = position.x - (size / 2)
+	local ypos = position.y - (size / 2)
+	local count
+	
+	for x = 0,size / 2,1 do
+		for y = 0,size / 2,1 do
+			tileName = game.gettile(xpos + x, ypos + y).name
+			if tileName == "water" or tileName == "deepwater" then
+				table.insert(tiles,{name="grass", position={xpos + x, ypos + y}})
+			end
+		end
+	end
+	
+	if #tiles ~= 0 then
+		count = #tiles
+		game.settiles(tiles)
+		return count
+	else
+		holes = game.findentitiesfiltered({area = {{x = xpos, y = ypos}, {x = xpos + (size / 2), y = ypos + (size / 2)}}, name = "holes"})
+		if #holes ~= 0 then
+			for _,v in pairs(holes) do
+				v.destroy()
+			end
+		end
+		return 0
+	end
+end
+
 function landfill2by2(position, player)
-	local tileName
-	local xpos = position.x - 1
-	local ypos = position.y - 1
-	local tiles = {}
-	local holes
-	
-	for x = 0,1,1 do
-		for y = 0,1,1 do
-			tileName = game.gettile(xpos + x, ypos + y).name
-			if tileName == "water" or tileName == "deepwater" then
-				table.insert(tiles,{name="grass", position={xpos + x, ypos + y}})
-			end
-		end
+	if landfill(position, 2) == 0 and player then
+		player.insert({name="landfill2by2", count=1})
 	end
 	
-	if #tiles ~= 0 then
-		game.settiles(tiles)
-		checkIfPlayerStuck()
-	else
-		holes = game.findentitiesfiltered({area = {{x = xpos, y = ypos}, {x = xpos + 2, y = ypos + 2}}, name = "holes"})
-		
-		if #holes ~= 0 then
-			for k,v in pairs(holes) do
-				v.destroy()
-			end
-		else
-			if player then
-				player.insert{name="landfill2by2", count=1}
-			end
-		end
-	end
+	game.createentity({name = "landfill-fade", position = position, force = getForceFromOptionalPlayer()})
 end
 
-function landfill8by8(position, player)
-	local tileName
-	local xpos = position.x - 2
-	local ypos = position.y - 2
-	local tiles = {}
-	local holes
+function landfill4by4(position, player)
+	local count = landfill(position, 4)
 	
-	for x = 0,3,1 do
-		for y = 0,3,1 do
-			tileName = game.gettile(xpos + x, ypos + y).name
-			if tileName == "water" or tileName == "deepwater" then
-				table.insert(tiles,{name="grass", position={xpos + x, ypos + y}})
-			end
+	if player then
+		if count == 0 then
+			player.insert({name="landfill4by4", count=1})
+		elseif count % 4 ~= 0 then
+			player.insert({name="landfill2by2", count=count % 4})
 		end
 	end
 	
-	if #tiles ~= 0 then
-		game.settiles(tiles)
-		checkIfPlayerStuck()
-	else
-		holes = game.findentitiesfiltered({area = {{x = xpos, y = ypos}, {x = xpos + 4, y = ypos + 4}}, name = "holes"})
-		
-		if #holes ~= 0 then
-			for k,v in pairs(holes) do
-				v.destroy()
-			end
-		else
-			if player then
-				player.insert{name="landfill8by8", count=1}
-			end
-		end
-	end
+	game.createentity({name = "landfill-fade-2", position = position, force = getForceFromOptionalPlayer()})
 end
-
-function checkIfPlayerStuck()
-	local ptiles = {}
-	local px
-	local py
-	
-	for _,player in pairs(game.players) do
-		px = player.position.x
-		py = player.position.y
-		for i = -0.2, 0.2, 0.4 do
-			for j = -0.2, 0.2, 0.4 do
-				if game.gettile(px + j, py + i).collideswith("player-layer") then
-					table.insert(ptiles, {name="grass", position={px + j, py + i}})
-				end
-			end
-		end
-	end
-
-	game.settiles(ptiles)
-end
-
 
 function waterBeGone(position, player)
 	-- Flood fills a body of water using landfills from the player's inventory
-	local xpos = math.floor(position.x)
-	local ypos = math.floor(position.y)
+	local floor = math.floor
+	local xpos = floor(position.x)
+	local ypos = floor(position.y)
 	local tiles = {}
 	local stiles = {}
 	local ntiles = {}
 	local positions = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}}
-	local totalReplaced = 0
 	local tileName
 	local x,y
-	local floor = math.floor
 	local floorX
 	local chunksEffected = {}
+	local result
 	
 	tileName = game.gettile(xpos, ypos).name
 	if tileName == "deepwater" or tileName == "water" then
 		table.insert(tiles, {name = "grass", position = {xpos, ypos}})
 		table.insert(stiles, {xpos, ypos})
-		totalReplaced = 1
 	end
 	
 	for t in pairs(stiles) do
@@ -346,11 +297,10 @@ function waterBeGone(position, player)
 			x = stiles[t][1] + p[1]
 			y = stiles[t][2] + p[2]
 			if ntiles[x] == nil or ntiles[x][y] == nil then
-				tileName = game.gettile(x, y).name
-				if tileName == "deepwater" or tileName == "water" then
+				result, tileName = pcall(game.gettile(x, y).name)
+				if result and (tileName == "deepwater" or tileName == "water") then
 					table.insert(tiles, {name = "grass", position = {x, y}})
 					table.insert(stiles, {x, y})
-					totalReplaced = totalReplaced + 1
 					
 					floorX = floor(x / 32)
 					if chunksEffected[floorX] == nil then
@@ -368,43 +318,48 @@ function waterBeGone(position, player)
 		end
 	end
 	
-	if totalReplaced ~= 0 then
-		if useLandfills(totalReplaced, player) == true then
-			game.settiles(tiles)
-			
-			-- Creates a stone entity owned by the player in each chunk effected by the flood fill triggering a minimap update and then destroys it
-			if chunksEffected ~= nil then
-				for x in pairs(chunksEffected) do
-					for y in pairs(chunksEffected[x]) do
-						game.createentity({name = "stone", position = {x * 32, y * 32}, force = game.forces.player}).destroy()
-					end
-				end
-			end
+	if #tiles ~= 0 then
+		if not player then
+			setTilesAndUpdateChunks(tiles, chunksEffected)
+			return #tiles
+		elseif useLandfills(#tiles, player) then
+			setTilesAndUpdateChunks(tiles, chunksEffected, player)
 		else
-			if player then
-				player.insert{name="water-be-gone", count=1}
-			end
-		end
-	else
-		if player then
 			player.insert{name="water-be-gone", count=1}
+		end
+	else if player then
+		player.insert{name="water-be-gone", count=1}
+	end
+end
+
+function setTilesAndUpdateChunks(tiles, chunks, player)
+	game.settiles(tiles)
+	
+	-- Creates a stone entity in each chunk effected by the flood fill triggering a minimap update and then destroys it
+	if chunks ~= nil then
+		local force = getForceFromOptionalPlayer()
+		for x in pairs(chunks) do
+			for y in pairs(chunks[x]) do
+				game.createentity({name = "stone", position = {x * 32, y * 32}, force = force}).destroy()
+			end
 		end
 	end
 end
 
 function useLandfills(tileCount, player)
-	if not player then
-		return false
+	if player.controllertype == defines.controllers.god then
+		return true
 	end
+	
 	-- Checks if the player has enough landfills to fill the tile count
 	local landfill2by2Count = player.getitemcount("landfill2by2")
-	local landfill8by8Count = player.getitemcount("landfill8by8")
+	local landfill4by4Count = player.getitemcount("landfill4by4")
 	
-	if landfill2by2Count * 4 + landfill8by8Count * 16 >= tileCount then
+	if landfill2by2Count * 4 + landfill4by4Count * 16 >= tileCount then
 		tileCount = tileCount - (player.removeitem({name = "landfill2by2", count = math.ceil(tileCount / 4)}) * 4)
 		
 		if tileCount > 0 then
-			player.removeitem({name = "landfill8by8", count = math.ceil(tileCount / 16)})
+			player.removeitem({name = "landfill4by4", count = math.ceil(tileCount / 16)})
 		end
 		
 		return true
@@ -413,3 +368,20 @@ function useLandfills(tileCount, player)
 		return false
 	end
 end
+
+function getForceFromOptionalPlayer(player)
+	if player then
+		return player.force
+	else
+		return game.forces.neutral
+	end
+end
+
+remote.addinterface("landfill", {
+	landfill,
+	createWater,
+	throwDirt,
+	createRandomStone,
+	useLandfills,
+	waterBeGone
+})
