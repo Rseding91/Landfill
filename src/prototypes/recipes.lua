@@ -12,13 +12,13 @@ data:extend(
 		},
 		{
 			type = "recipe",
-			name = "landfill8by8",
+			name = "landfill4by4",
 			enabled = "true",
 			ingredients =
 			{
 				{"landfill2by2", 4}
 			},
-			result = "landfill8by8"
+			result = "landfill4by4"
 		},
 		{
 			type = "recipe",

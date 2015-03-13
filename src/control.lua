@@ -5,6 +5,11 @@ local throwRocks = true
 local maximumRockThrowDistance = 10
 local loaded
 local bombs
+local replaceableTiles =
+{
+	["water"] = "grass",
+	["deepwater"] = "grass"
+}
 
 function loaded()
 	if not loaded then
@@ -166,8 +171,8 @@ function createRandomStone(position)
 		
 		tileName = game.gettile(floor(x), floor(y)).name
 		
-		if tileName == "water" or tileName == "deepwater" then
-			game.settiles({{name="grass", position={floor(x), floor(y)}}})
+		if replaceableTiles[tileName] then
+			game.settiles({{name=replaceableTiles[tileName], position={floor(x), floor(y)}}})
 		else
 			game.createentity({name = "stone", position = {x, y}}).amount = floor(random(13, 27))
 			game.createentity({name = "explosion", position = {x, y}})
@@ -228,8 +233,8 @@ function landfill(position, size)
 	for x = 0,size / 2,1 do
 		for y = 0,size / 2,1 do
 			tileName = game.gettile(xpos + x, ypos + y).name
-			if tileName == "water" or tileName == "deepwater" then
-				table.insert(tiles,{name="grass", position={xpos + x, ypos + y}})
+			if replaceableTiles[tileName] then
+				table.insert(tiles,{name=replaceableTiles[tileName], position={xpos + x, ypos + y}})
 			end
 		end
 	end
@@ -298,8 +303,8 @@ function waterBeGone(position, player)
 			y = stiles[t][2] + p[2]
 			if ntiles[x] == nil or ntiles[x][y] == nil then
 				result, tileName = pcall(game.gettile(x, y).name)
-				if result and (tileName == "deepwater" or tileName == "water") then
-					table.insert(tiles, {name = "grass", position = {x, y}})
+				if result and replaceableTiles[tileName] then
+					table.insert(tiles, {name = replaceableTiles[tileName], position = {x, y}})
 					table.insert(stiles, {x, y})
 					
 					floorX = floor(x / 32)
@@ -377,11 +382,18 @@ function getForceFromOptionalPlayer(player)
 	end
 end
 
+function modifyReplaceableTile(sourceTile, replaceTile)
+	if not replaceableTiles[sourceTile] or replaceableTiles[sourceTile] ~= replaceTile then
+		replaceableTiles[sourceTile] = replaceTile
+	end
+end
+
 remote.addinterface("landfill", {
 	landfill,
 	createWater,
 	throwDirt,
 	createRandomStone,
 	useLandfills,
-	waterBeGone
+	waterBeGone,
+	modifyReplaceableTile
 })

@@ -12,12 +12,12 @@ data:extend(
 		},
 		{
 			type = "item",
-			name = "landfill8by8",
+			name = "landfill4by4",
 			icon = "__Landfill__/graphics/icons/landfill2.png",
 			flags = {"goes-to-quickbar"},
 			subgroup = "transport",
 			order = "cb[landfill]",
-			place_result = "landfill8by8",
+			place_result = "landfill4by4",
 			stack_size = 256
 		},
 		{
