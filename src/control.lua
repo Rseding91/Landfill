@@ -230,8 +230,8 @@ function landfill(position, size)
 	local ypos = position.y - (size / 2)
 	local count
 	
-	for x = 0,size / 2,1 do
-		for y = 0,size / 2,1 do
+	for x = 0,size - 1 do
+		for y = 0,size - 1 do
 			tileName = game.gettile(xpos + x, ypos + y).name
 			if replaceableTiles[tileName] then
 				table.insert(tiles,{name=replaceableTiles[tileName], position={xpos + x, ypos + y}})
@@ -256,7 +256,7 @@ end
 
 function landfill2by2(position, player)
 	if landfill(position, 2) == 0 and player then
-		player.insert({name="landfill2by2", count=1})
+		player.insert({name = "landfill2by2", count = 1})
 	end
 	
 	game.createentity({name = "landfill-fade", position = position, force = getForceFromOptionalPlayer()})
@@ -268,8 +268,8 @@ function landfill4by4(position, player)
 	if player then
 		if count == 0 then
 			player.insert({name="landfill4by4", count=1})
-		elseif count % 4 ~= 0 then
-			player.insert({name="landfill2by2", count=count % 4})
+		elseif math.ceil(count / 4) < 4 then
+			player.insert({name = "landfill2by2", count = 4 - math.ceil(count / 4)})
 		end
 	end
 	
@@ -285,7 +285,7 @@ function waterBeGone(position, player)
 	local stiles = {}
 	local ntiles = {}
 	local positions = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}}
-	local tileName
+	local tile, tileName
 	local x,y
 	local floorX
 	local chunksEffected = {}
@@ -302,7 +302,7 @@ function waterBeGone(position, player)
 			x = stiles[t][1] + p[1]
 			y = stiles[t][2] + p[2]
 			if ntiles[x] == nil or ntiles[x][y] == nil then
-				result, tileName = pcall(game.gettile(x, y).name)
+				result, tileName = pcall(function() return game.gettile(x, y).name end)
 				if result and replaceableTiles[tileName] then
 					table.insert(tiles, {name = replaceableTiles[tileName], position = {x, y}})
 					table.insert(stiles, {x, y})
@@ -332,7 +332,7 @@ function waterBeGone(position, player)
 		else
 			player.insert{name="water-be-gone", count=1}
 		end
-	else if player then
+	elseif player then
 		player.insert{name="water-be-gone", count=1}
 	end
 end
