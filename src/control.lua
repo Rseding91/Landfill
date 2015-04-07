@@ -3,7 +3,7 @@ require "defines"
 local displaceDirt = true
 local throwRocks = true
 local maximumRockThrowDistance = 10
-local loaded
+local isLoaded
 local bombs
 local replaceableTiles =
 {
@@ -12,8 +12,8 @@ local replaceableTiles =
 }
 
 function loaded()
-	if not loaded then
-		loaded = true
+	if not isLoaded then
+		isLoaded = true
 		
 		if glob.bombs ~= nil then
 			bombs = glob.bombs
