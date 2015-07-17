@@ -84,7 +84,7 @@ data:extend(
 			collision_box = {{-0.99, -0.99}, {0.99, 0.99}},
 			collision_mask = {"object-layer"},
 			selectable_in_game = false,
-			time_before_removed = 45, -- disappear after 0.75 seconds
+			time_before_removed = 10, -- disappear after 0.75 seconds
 			final_render_layer = "remnants",
 			animation = 
 			{
@@ -108,7 +108,7 @@ data:extend(
 			collision_box = {{-1.99, -1.99}, {1.99, 1.99}},
 			collision_mask = {"object-layer"},
 			selectable_in_game = false,
-			time_before_removed = 60, -- disappear after 1 seconds
+			time_before_removed = 10, -- disappear after 1 seconds
 			final_render_layer = "remnants",
 			animation = 
 			{
