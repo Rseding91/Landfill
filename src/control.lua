@@ -3,7 +3,6 @@ require "defines"
 local displaceDirt = true
 local throwRocks = true
 local maximumRockThrowDistance = 10
-local isLoaded
 local bombs
 local replaceableTiles =
 {
@@ -11,27 +10,29 @@ local replaceableTiles =
   ["deepwater"] = "grass"
 }
 
-function loaded()
-  if not isLoaded then
-    isLoaded = true
-    
-    if global.bombs ~= nil then
-      bombs = global.bombs
-      for k,v in pairs(bombs) do
-        if v[1].valid and v[5] == nil then
-          v[5] = v[1].surface
-        end
-      end
-      game.on_event(defines.events.on_tick, tickBombs)
-      if global.ticks == nil then
-        global.ticks = 0
+script.on_configuration_changed(function(data)
+  if global.bombs ~= nil then
+    for k,v in pairs(global.bombs) do
+      if v[1].valid and v[5] == nil then
+        v[5] = v[1].surface
       end
     end
+    
+    if global.ticks == nil then
+      global.ticks = 0
+    end
   end
-end
+end)
 
-game.on_load(loaded)
-game.on_init(loaded)
+script.on_load(function(event)
+  if global.bombs ~= nil then
+    bombs = global.bombs
+    script.on_event(defines.events.on_tick, tickBombs)
+    if global.ticks == nil then
+      global.ticks = 0
+    end
+  end
+end)
 
 function tickBombs()
   if global.ticks > 0 then global.ticks = global.ticks - 1 else global.ticks = 10, executeTicks() end
@@ -98,7 +99,7 @@ function executeTicks()
         if #global.bombs == 0 then
           bombs = nil
           global.bombs = nil
-          game.on_event(defines.events.on_tick, nil)
+          script.on_event(defines.events.on_tick, nil)
         end
       end
     end
@@ -186,7 +187,7 @@ function createRandomStone(position, surface)
   end
 end
 
-game.on_event(defines.events.on_built_entity, function(event)
+script.on_event(defines.events.on_built_entity, function(event)
   local newBomb
   local bombEntity
   local player = game.get_player(event.player_index)
@@ -211,7 +212,7 @@ game.on_event(defines.events.on_built_entity, function(event)
     if global.bombs == nil then
       global.bombs = {}
       bombs = global.bombs
-      game.on_event(defines.events.on_tick, tickBombs)
+      script.on_event(defines.events.on_tick, tickBombs)
       if global.ticks == nil then
         global.ticks = 0
       end
