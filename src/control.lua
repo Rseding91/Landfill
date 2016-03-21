@@ -7,7 +7,7 @@ local bombs
 local replaceableTiles =
 {
   ["water"] = "grass",
-  ["deepwater"] = "grass".
+  ["deepwater"] = "grass",
   ["water-green"] = "grass",
   ["deepwater-green"] = "grass"
 }
