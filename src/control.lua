@@ -1,4 +1,3 @@
-require "defines"
 
 local displaceDirt = true
 local throwRocks = true
@@ -192,23 +191,16 @@ end
 script.on_event(defines.events.on_built_entity, function(event)
   local newBomb
   local bombEntity
-  local player = game.get_player(event.player_index)
+  local player = game.players[event.player_index]
   
-  if event.created_entity.name == "landfill2by2"
-    or event.created_entity.name == "landfill4by4"
-    or event.created_entity.name == "water-be-gone" then
-      if event.created_entity.name == "landfill2by2" then
-        landfill2by2(event.created_entity.position, player)
-      elseif event.created_entity.name == "landfill4by4" then
-        landfill4by4(event.created_entity.position, player)
-      elseif event.created_entity.name == "water-be-gone" then
-        waterBeGone(event.created_entity.position, player)
-      end
+  if event.created_entity.name == "water-be-gone" then
+      waterBeGone(event.created_entity.position, player)
+      
       if event.created_entity.valid then
         event.created_entity.destroy()
       end
   elseif event.created_entity.name == "water-bomb-area" then
-    bombEntity = player.surface.create_entity({name = "water-bomb", position = event.created_entity.position, force = game.forces.player})
+    bombEntity = player.surface.create_entity({name = "water-bomb", position = event.created_entity.position, force = event.created_entity.force})
     event.created_entity.destroy()
     
     if global.bombs == nil then
@@ -230,58 +222,6 @@ script.on_event(defines.events.on_built_entity, function(event)
   end
 end)
 
-function landfill(position, size, surface)
-  local tileName
-  local tiles = {}
-  local holes
-  local xpos = position.x - (size / 2)
-  local ypos = position.y - (size / 2)
-  local count
-  
-  for x = 0,size - 1 do
-    for y = 0,size - 1 do
-      tileName = surface.get_tile(xpos + x, ypos + y).name
-      if replaceableTiles[tileName] then
-        table.insert(tiles,{name=replaceableTiles[tileName], position={xpos + x, ypos + y}})
-      end
-    end
-  end
-  
-  if #tiles ~= 0 then
-    count = #tiles
-    surface.set_tiles(tiles)
-    return count
-  else
-    holes = surface.find_entities_filtered({area = {{x = xpos, y = ypos}, {x = xpos + (size / 2), y = ypos + (size / 2)}}, name = "holes"})
-    if #holes ~= 0 then
-      for _,v in pairs(holes) do
-        v.destroy()
-      end
-    end
-    return 0
-  end
-end
-
-function landfill2by2(position, player)
-  if landfill(position, 2, player.surface) == 0 then
-    player.insert({name = "landfill2by2", count = 1})
-  end
-  
-  player.surface.create_entity({name = "landfill-fade", position = position, force = player.force})
-end
-
-function landfill4by4(position, player)
-  local count = landfill(position, 4, player.surface)
-  
-  if count == 0 then
-    player.insert({name="landfill4by4", count=1})
-  elseif math.ceil(count / 4) < 4 then
-    player.insert({name = "landfill2by2", count = 4 - math.ceil(count / 4)})
-  end
-  
-  player.surface.create_entity({name = "landfill-fade-2", position = position, force = player.force})
-end
-
 function waterBeGone(position, player)
   -- Flood fills a body of water using landfills from the player's inventory
   local floor = math.floor
@@ -291,16 +231,15 @@ function waterBeGone(position, player)
   local stiles = {}
   local ntiles = {}
   local positions = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}}
-  local tile, tileName
+  local tile
   local x,y
   local floorX
   local chunksEffected = {}
-  local result
   local surface = player.surface
   
-  tileName = surface.get_tile(xpos, ypos).name
-  if tileName == "deepwater" or tileName == "water" then
-    table.insert(tiles, {name = "grass", position = {xpos, ypos}})
+  tile = surface.get_tile(xpos, ypos)
+  if tile.valid and replaceableTiles[tile.name] then
+    table.insert(tiles, {name = replaceableTiles[tile.name], position = {xpos, ypos}})
     table.insert(stiles, {xpos, ypos})
   end
   
@@ -309,9 +248,10 @@ function waterBeGone(position, player)
       x = stiles[t][1] + p[1]
       y = stiles[t][2] + p[2]
       if ntiles[x] == nil or ntiles[x][y] == nil then
-        result, tileName = pcall(function() return surface.get_tile(x, y).name end)
-        if result and replaceableTiles[tileName] then
-          table.insert(tiles, {name = replaceableTiles[tileName], position = {x, y}})
+        tile = surface.get_tile(x, y)
+        
+        if tile.valid and replaceableTiles[tile.name] then
+          table.insert(tiles, {name = replaceableTiles[tile.name], position = {x, y}})
           table.insert(stiles, {x, y})
           
           floorX = floor(x / 32)
@@ -361,19 +301,13 @@ function useLandfills(tileCount, player)
   end
   
   -- Checks if the player has enough landfills to fill the tile count
-  local landfill2by2Count = player.get_item_count("landfill2by2")
-  local landfill4by4Count = player.get_item_count("landfill4by4")
+  local landfillCount = player.get_item_count("landfill")
   
-  if landfill2by2Count * 4 + landfill4by4Count * 16 >= tileCount then
-    tileCount = tileCount - (player.remove_item({name = "landfill2by2", count = math.ceil(tileCount / 4)}) * 4)
-    
-    if tileCount > 0 then
-      player.remove_item({name = "landfill4by4", count = math.ceil(tileCount / 16)})
-    end
-    
+  if landfillCount >= tileCount then
+    player.remove_item({name = "landfill", count = landfillCount})
     return true
   else
-    player.print("Insufficient landfills to fill water body. Requires: " .. math.ceil(tileCount / 4) .. " Landfills or " .. math.ceil(tileCount / 16) .. " Bigger Landfills or a mixture.")
+    player.print("Insufficient landfills to fill water body. Requires: " .. tileCount .. " Landfills.")
     return false
   end
 end
@@ -383,13 +317,3 @@ function modifyReplaceableTile(sourceTile, replaceTile)
     replaceableTiles[sourceTile] = replaceTile
   end
 end
-
-remote.add_interface("landfill", {
-  landfill,
-  createWater,
-  throwDirt,
-  createRandomStone,
-  useLandfills,
-  waterBeGone,
-  modifyReplaceableTile
-})

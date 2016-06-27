@@ -2,26 +2,6 @@ data:extend(
 	{
 		{
 			type = "item",
-			name = "landfill2by2",
-			icon = "__Landfill__/graphics/icons/landfill.png",
-			flags = {"goes-to-quickbar"},
-			subgroup = "transport",
-			order = "ca[landfill]",
-			place_result = "landfill2by2",
-			stack_size = 256
-		},
-		{
-			type = "item",
-			name = "landfill4by4",
-			icon = "__Landfill__/graphics/icons/landfill2.png",
-			flags = {"goes-to-quickbar"},
-			subgroup = "transport",
-			order = "cb[landfill]",
-			place_result = "landfill4by4",
-			stack_size = 256
-		},
-		{
-			type = "item",
 			name = "water-be-gone",
 			icon = "__Landfill__/graphics/icons/water-be-gone - 3.png",
 			flags = {"goes-to-quickbar"},

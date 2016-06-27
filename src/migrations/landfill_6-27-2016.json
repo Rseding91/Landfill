@@ -1,0 +1,12 @@
+{
+  "item":
+  [
+    ["landfill2by2", "landfill"],
+    ["landfill4by4", "landfill"]
+  ],
+  "recipe":
+  [
+    ["landfill2by2", "landfill"],
+    ["landfill4by4", "landfill"]
+  ]
+}
