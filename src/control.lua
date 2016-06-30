@@ -304,7 +304,7 @@ function useLandfills(tileCount, player)
   local landfillCount = player.get_item_count("landfill")
   
   if landfillCount >= tileCount then
-    player.remove_item({name = "landfill", count = landfillCount})
+    player.remove_item({name = "landfill", count = tileCount})
     return true
   else
     player.print("Insufficient landfills to fill water body. Requires: " .. tileCount .. " Landfills.")
