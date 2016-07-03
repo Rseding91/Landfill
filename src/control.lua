@@ -29,9 +29,6 @@ script.on_load(function(event)
   if global.bombs ~= nil then
     bombs = global.bombs
     script.on_event(defines.events.on_tick, tickBombs)
-    if global.ticks == nil then
-      global.ticks = 0
-    end
   end
 end)
 
