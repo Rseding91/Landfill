@@ -221,55 +221,24 @@ end)
 
 function waterBeGone(position, player)
   -- Flood fills a body of water using landfills from the player's inventory
-  local floor = math.floor
-  local xpos = floor(position.x)
-  local ypos = floor(position.y)
-  local tiles = {}
-  local stiles = {}
-  local ntiles = {}
-  local positions = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}}
-  local tile
-  local x,y
-  local floorX
-  local chunksEffected = {}
+  local xpos = math.floor(position.x)
+  local ypos = math.floor(position.y)
   local surface = player.surface
   
-  tile = surface.get_tile(xpos, ypos)
-  if tile.valid and replaceableTiles[tile.name] then
-    table.insert(tiles, {name = replaceableTiles[tile.name], position = {xpos, ypos}})
-    table.insert(stiles, {xpos, ypos})
+  local searchTiles = {}
+  for k,v in pairs(replaceableTiles) do
+    table.insert(searchTiles, k)
   end
   
-  for t in pairs(stiles) do
-    for k,p in pairs(positions) do
-      x = stiles[t][1] + p[1]
-      y = stiles[t][2] + p[2]
-      if ntiles[x] == nil or ntiles[x][y] == nil then
-        tile = surface.get_tile(x, y)
-        
-        if tile.valid and replaceableTiles[tile.name] then
-          table.insert(tiles, {name = replaceableTiles[tile.name], position = {x, y}})
-          table.insert(stiles, {x, y})
-          
-          floorX = floor(x / 32)
-          if chunksEffected[floorX] == nil then
-            chunksEffected[floorX] =  {}
-          end
-          
-          chunksEffected[floorX][floor(y / 32)] = 1
-        end
-        
-        if ntiles[x] == nil then
-          ntiles[x] = {}
-        end
-        ntiles[x][y] = true
+  local tilePositions = surface.get_connected_tiles({xpos, ypos}, searchTiles)
+  
+  if #tilePositions ~= 0 then
+    if useLandfills(#tilePositions, player) then
+      local tiles = {}
+      for k,v in pairs(tilePositions) do
+        table.insert(tiles, {name = "grass", position = v})
       end
-    end
-  end
-  
-  if #tiles ~= 0 then
-    if useLandfills(#tiles, player) then
-      setTilesAndUpdateChunks(tiles, chunksEffected, player)
+      surface.set_tiles(tiles)
     else
       player.insert{name="water-be-gone", count=1}
     end
